@@ -1,0 +1,11 @@
+[Unit]
+Description=pager
+After=syslog.target
+
+[Service]
+User=myapp
+ExecStart=/home/fieldju/pager.jar
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

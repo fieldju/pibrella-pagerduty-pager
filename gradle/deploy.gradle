@@ -1,0 +1,47 @@
+remotes {
+    pi {
+        host = '192.168.2.4'
+        user = 'fieldju'
+    }
+}
+
+task deploy() {
+    doLast {
+        ssh.run {
+            session(remotes.pi) {
+                put from: buildDir.getAbsolutePath() + File.separator + 'libs' + File.separator + artifactId + '-' + version + ".jar", into: '/home/fieldju/pager/pager.jar'
+            }
+        }
+    }
+}
+
+task startPager() {
+    doLast {
+        ssh.run {
+            session(remotes.pi) {
+                def res = execute 'sudo service pager start'
+                println res
+            }
+        }
+    }
+}
+
+task stopPager() {
+    doLast {
+        ssh.run {
+            session(remotes.pi) {
+                execute 'sudo service pager stop'
+            }
+        }
+    }
+}
+
+task restartPager() {
+    doLast {
+        ssh.run {
+            session(remotes.pi) {
+                execute 'sudo service pager restart'
+            }
+        }
+    }
+}

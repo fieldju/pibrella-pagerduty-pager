@@ -57,3 +57,5 @@ atlassian-ide-plugin.xml
 # Project specific files/directories
 *-local-overrides.properties
 *-local-overrides.conf
+
+profile/
