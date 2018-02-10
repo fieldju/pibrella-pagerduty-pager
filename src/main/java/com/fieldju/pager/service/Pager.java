@@ -102,7 +102,7 @@ public class Pager {
 
         String incidentKey = payload.getIncident().getIncidentKey();
 
-        if (Event.INCIDENT_RESOLVE.equals(event) || hasPagerOwnerAknowledged(payload.getIncident().getAcknowledgements())) {
+        if (Event.INCIDENT_RESOLVE.equals(event) || hasPagerOwnerAcknowledged(payload.getIncident().getAcknowledgements())) {
             log.info("Event is for incident being resolved, clearing from pager");
             clearIncident(incidentKey);
             return;
@@ -111,12 +111,12 @@ public class Pager {
         List<Assignee> assignees = payload.getIncident().getAssignments()
                 .stream().map(Assignment::getAssignee).collect(Collectors.toList());
 
-        if (isAssigneePagerOwner(assignees) || ! hasPagerOwnerAknowledged(payload.getIncident().getAcknowledgements())) {
+        if (isAssigneePagerOwner(assignees) || ! hasPagerOwnerAcknowledged(payload.getIncident().getAcknowledgements())) {
             addIncident(incidentKey);
         }
     }
 
-    private boolean hasPagerOwnerAknowledged(List<Acknowledgement> acknowledgements) {
+    private boolean hasPagerOwnerAcknowledged(List<Acknowledgement> acknowledgements) {
         return acknowledgements.stream()
                 .anyMatch(acknowledgement ->
                         acknowledgement.getAcknowledger().getId().equals(pagerProperties.getPagerdutyUserid()));
