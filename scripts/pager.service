@@ -3,9 +3,10 @@ Description=pager
 After=syslog.target
 
 [Service]
-User=myapp
-ExecStart=/home/fieldju/pager.jar
-SuccessExitStatus=143
+Type=simple
+ExecStart=/usr/bin/java -jar -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 /opt/pager/app.jar
+RestartSec=300
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target

@@ -2,14 +2,18 @@ remotes {
     pi {
         host = '192.168.2.4'
         user = 'fieldju'
+        identity = file("${System.getenv("HOME")}${File.separator}.ssh${File.separator}id_rsa")
     }
 }
 
-task deploy() {
+task deploy(dependsOn: build) {
     doLast {
         ssh.run {
             session(remotes.pi) {
-                put from: buildDir.getAbsolutePath() + File.separator + 'libs' + File.separator + artifactId + '-' + version + ".jar", into: '/home/fieldju/pager/pager.jar'
+                put from: buildDir.getAbsolutePath() + File.separator + 'libs' + File.separator + artifactId + '-' + version + ".jar", into: '/home/fieldju/app.jar'
+                execute "sudo mv /home/fieldju/app.jar /opt/pager/app.jar"
+                execute "sudo chown pager:pager /opt/pager/app.jar"
+                execute 'sudo service pager restart'
             }
         }
     }

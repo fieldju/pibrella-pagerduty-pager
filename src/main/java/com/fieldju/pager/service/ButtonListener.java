@@ -1,39 +1,44 @@
-/*
- * Copyright (c) 2018 Nike Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.fieldju.pager.service;
 
+import com.pi4j.component.button.ButtonEvent;
+import com.pi4j.component.button.ButtonPressedListener;
+import com.pi4j.component.buzzer.Buzzer;
+import com.pi4j.device.pibrella.Pibrella;
+import com.pi4j.device.pibrella.PibrellaLed;
+import com.pi4j.device.pibrella.PibrellaOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 @Component
 public class ButtonListener {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    Executor executor = Executors.newSingleThreadExecutor();
+    private final Pibrella pibrella;
 
-    public ButtonListener() {
-        log.info("constructor called");
-        executor.execute(() -> {
+    @Autowired
+    public ButtonListener(Pibrella pibrella) {
 
-        });
+        this.pibrella = pibrella;
+        pibrella.button().addListener(new Listener());
+    }
+
+    class Listener implements ButtonPressedListener {
+
+        boolean toggle;
+
+        @Override
+        public void onButtonPressed(ButtonEvent event) {
+            toggle = !toggle;
+            if (toggle) {
+                pibrella.getLed(PibrellaLed.YELLOW).on();
+                pibrella.getOutputPin(PibrellaOutput.H).toggle();
+            } else {
+                pibrella.getLed(PibrellaLed.YELLOW).off();
+                pibrella.getOutputPin(PibrellaOutput.H).toggle();
+            }
+        }
     }
 }
