@@ -1,6 +1,6 @@
 remotes {
     pi {
-        host = '192.168.2.4'
+        host = '192.168.0.10'
         user = 'fieldju'
         identity = file("${System.getenv("HOME")}${File.separator}.ssh${File.separator}id_rsa")
     }

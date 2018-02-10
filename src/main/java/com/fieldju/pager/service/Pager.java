@@ -1,12 +1,14 @@
 package com.fieldju.pager.service;
 
 import com.fieldju.pager.configuration.PagerProperties;
+import com.fieldju.pager.model.pagerduty.webhook.v2.Acknowledgement;
 import com.fieldju.pager.model.pagerduty.webhook.v2.Assignee;
 import com.fieldju.pager.model.pagerduty.webhook.v2.Assignment;
 import com.fieldju.pager.model.pagerduty.webhook.v2.Incident;
 import com.fieldju.pager.model.pagerduty.webhook.v2.Event;
 import com.fieldju.pager.model.pagerduty.webhook.v2.WebhookPayload;
 import com.fieldju.pager.model.pagerduty.webhook.v2.WebhookPayloadWrapper;
+import com.pi4j.component.button.ButtonPressedListener;
 import com.pi4j.component.buzzer.Buzzer;
 import com.pi4j.component.light.LED;
 import com.pi4j.device.pibrella.Pibrella;
@@ -21,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
@@ -35,20 +36,20 @@ public class Pager {
     private final ExecutorService pibrellaStateManager = Executors.newSingleThreadExecutor();
 
     private final PagerProperties pagerProperties;
+    private final PagerDuty pagerDuty;
 
     @Autowired
     public Pager(PagerProperties pagerProperties,
-                 Pibrella pibrella) {
+                 Pibrella pibrella, PagerDuty pagerDuty) {
 
         this.pagerProperties = pagerProperties;
+        this.pagerDuty = pagerDuty;
 
         final Buzzer buzzer = pibrella.getBuzzer();
         final LED red = pibrella.getLed(PibrellaLed.RED);
-        final LED yellow = pibrella.getLed(PibrellaLed.YELLOW);
         final LED green = pibrella.getLed(PibrellaLed.GREEN);
 
         pibrellaStateManager.execute(() -> {
-
             while (! Thread.currentThread().isInterrupted()) {
                 if (activeIncidentsAssignedToPagerOwner.isEmpty()) {
                     buzzer.stop();
@@ -66,6 +67,11 @@ public class Pager {
                     Thread.currentThread().interrupt();
                 }
             }
+        });
+        pibrella.getButton().addListener((ButtonPressedListener) event -> {
+            log.info("button pressed");
+            activeIncidentsAssignedToPagerOwner.forEach(pagerDuty::acknowledgeIssue);
+            activeIncidentsAssignedToPagerOwner.clear();
         });
     }
 
@@ -96,7 +102,7 @@ public class Pager {
 
         String incidentKey = payload.getIncident().getIncidentKey();
 
-        if (Event.INCIDENT_RESOLVE.equals(event)) {
+        if (Event.INCIDENT_RESOLVE.equals(event) || hasPagerOwnerAknowledged(payload.getIncident().getAcknowledgements())) {
             log.info("Event is for incident being resolved, clearing from pager");
             clearIncident(incidentKey);
             return;
@@ -105,9 +111,15 @@ public class Pager {
         List<Assignee> assignees = payload.getIncident().getAssignments()
                 .stream().map(Assignment::getAssignee).collect(Collectors.toList());
 
-        if (isAssigneePagerOwner(assignees)) {
+        if (isAssigneePagerOwner(assignees) || ! hasPagerOwnerAknowledged(payload.getIncident().getAcknowledgements())) {
             addIncident(incidentKey);
         }
+    }
+
+    private boolean hasPagerOwnerAknowledged(List<Acknowledgement> acknowledgements) {
+        return acknowledgements.stream()
+                .anyMatch(acknowledgement ->
+                        acknowledgement.getAcknowledger().getId().equals(pagerProperties.getPagerdutyUserid()));
     }
 
     private void addIncident(String incidentKey) {
