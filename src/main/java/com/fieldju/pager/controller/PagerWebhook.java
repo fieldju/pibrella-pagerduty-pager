@@ -10,16 +10,16 @@ import javax.servlet.http.HttpServletResponse;
 @RestController
 public class PagerWebhook {
 
-    private final Pager pagerDuty;
+    private final Pager pager;
 
     @Autowired
-    public PagerWebhook(Pager pagerDuty) {
-        this.pagerDuty = pagerDuty;
+    public PagerWebhook(Pager pager) {
+        this.pager = pager;
     }
 
     @PostMapping("/pagerduty-hook" )
     public void processPagerDutyWebhook(@RequestBody WebhookPayloadWrapper webhookPayloadWrapper, HttpServletResponse response) {
-        pagerDuty.processTriggerAsync(webhookPayloadWrapper);
+        pager.processTriggerAsync(webhookPayloadWrapper);
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);
     }
 
